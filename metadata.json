@@ -1,5 +1,7 @@
 {
   "name": "Garden Landscape Designer AI",
   "description": "Upload a photo of your garden, describe your dream landscape, and let AI generate a new design for you. The app also identifies the plants in the generated image and includes a helpful gardening chatbot.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }

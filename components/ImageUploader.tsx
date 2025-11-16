@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { fileToBase64 } from '../utils/fileUtils';
 import { ImageState } from '../types';
@@ -61,6 +60,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload }) => {
         <input
           type="file"
           accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={handleFileChange}
         />

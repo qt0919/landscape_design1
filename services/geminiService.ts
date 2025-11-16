@@ -93,8 +93,26 @@ export const identifyPlantsInImage = async (base64Image: string, mimeType: strin
     });
     
     const jsonText = response.text.trim();
-    const result = JSON.parse(jsonText);
-    return result.plants.map((name: string) => ({ name }));
+    if (!jsonText) {
+      // If the model returns nothing, we can't identify plants.
+      return [];
+    }
+    
+    try {
+        const result = JSON.parse(jsonText);
+        // Validate the structure of the returned object
+        if (result && Array.isArray(result.plants)) {
+            // Ensure we handle non-string items in the array gracefully
+            return result.plants.map((name: unknown) => ({ name: String(name) }));
+        } else {
+            // The JSON is valid but doesn't match our schema.
+            console.warn("Plant identification returned malformed data structure.", jsonText);
+            throw new Error("AI returned an unexpected data structure for plants.");
+        }
+    } catch (parseError) {
+        console.error("Error parsing JSON from plant identification:", parseError, "Received:", jsonText);
+        throw new Error("Failed to parse plant data from the AI response.");
+    }
   } catch (error) {
     console.error("Error identifying plants:", error);
     throw new Error("Failed to identify plants in the generated image.");
