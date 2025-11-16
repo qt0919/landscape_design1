@@ -1,10 +1,17 @@
 import { GoogleGenAI, Type, Modality, Chat } from "@google/genai";
 import { ChatMessage } from '../types';
 
-const API_KEY = process.env.API_KEY;
+// In Vite-based projects, environment variables exposed to the client must be prefixed with VITE_
+// and are accessed via `import.meta.env`.
+// @ts-ignore - The build environment provides import.meta.env
+const API_KEY = import.meta.env.VITE_API_KEY;
+
 
 if (!API_KEY) {
-  throw new Error("API_KEY environment variable not set.");
+  // This error is thrown if the VITE_API_KEY is not set in the build environment.
+  // On platforms like Vercel, this needs to be set in the project's "Environment Variables" settings.
+  // The project must be redeployed after setting the variable for the change to take effect.
+  throw new Error("VITE_API_KEY environment variable not set. Please follow these steps: 1. In your Vercel project settings, go to 'Environment Variables'. 2. Create a variable with the key 'VITE_API_KEY' and your API key as the value. 3. Trigger a new deployment for the changes to take effect.");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
