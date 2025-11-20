@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ImageState, Plant, DesignHistoryItem, DesignSession } from './types';
 import { generateLandscapeDesign, identifyPlantsInImage } from './services/geminiService';
 import ImageUploader from './components/ImageUploader';
@@ -10,16 +10,72 @@ import HistoryTray from './components/HistoryTray';
 import AllHistoryModal from './components/AllHistoryModal';
 import { UploadIcon } from './components/icons';
 
+const SESSIONS_STORAGE_KEY = 'gardenDesignSessions';
+const ACTIVE_SESSION_ID_STORAGE_KEY = 'gardenDesignActiveSessionId';
+
+
 const App: React.FC = () => {
-  const [originalImage, setOriginalImage] = useState<ImageState | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<ImageState | null>(null);
+  // Load sessions and active ID from localStorage first, with error handling.
+  const [sessions, setSessions] = useState<DesignSession[]>(() => {
+    try {
+      const saved = localStorage.getItem(SESSIONS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Could not load sessions from localStorage:", e);
+      return [];
+    }
+  });
+
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(() => {
+    try {
+      const saved = localStorage.getItem(ACTIVE_SESSION_ID_STORAGE_KEY);
+      const parsedId = saved ? JSON.parse(saved) : null;
+      // Ensure the active session we're loading still exists.
+      if (parsedId && sessions.some(s => s.id === parsedId)) {
+        return parsedId;
+      }
+      return null;
+    } catch (e) {
+      console.error("Could not load active session ID from localStorage:", e);
+      return null;
+    }
+  });
+
+  // Now, derive the initial view state from the loaded sessions and ID.
+  const activeSessionOnLoad = sessions.find(s => s.id === activeSessionId);
+  const lastHistoryItemOnLoad = activeSessionOnLoad?.history?.[activeSessionOnLoad.history.length - 1];
+
+  const [originalImage, setOriginalImage] = useState<ImageState | null>(activeSessionOnLoad?.baseImage || null);
+  const [generatedImage, setGeneratedImage] = useState<ImageState | null>(lastHistoryItemOnLoad?.generatedImage || null);
+  
   const [plants, setPlants] = useState<Plant[]>([]);
-  const [sessions, setSessions] = useState<DesignSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Effect to save sessions to localStorage whenever they change.
+  useEffect(() => {
+    try {
+      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+    } catch (e) {
+      console.error("Could not save sessions to localStorage:", e);
+    }
+  }, [sessions]);
+
+  // Effect to save the active session ID when it changes.
+  useEffect(() => {
+    try {
+      if (activeSessionId) {
+        localStorage.setItem(ACTIVE_SESSION_ID_STORAGE_KEY, JSON.stringify(activeSessionId));
+      } else {
+        localStorage.removeItem(ACTIVE_SESSION_ID_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.error("Could not save active session ID to localStorage:", e);
+    }
+  }, [activeSessionId]);
+
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
   const designHistory = activeSession ? activeSession.history : [];
